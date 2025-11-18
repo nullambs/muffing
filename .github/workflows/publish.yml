@@ -1,0 +1,55 @@
+name: publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y build-essential
+
+    - name: Build muffing
+      run: make build
+
+    - name: Create tarball
+      run: |
+        cd build
+        tar -czf muffing-linux-x64.tar.gz muffing
+        cd ..
+
+    - name: Generate checksums
+      run: |
+        cd build
+        sha256sum muffing-linux-x64.tar.gz > checksums.txt
+        cd ..
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          build/muffing-linux-x64.tar.gz
+          build/checksums.txt
+        body: |
+          ## release ${{ github.ref_name }}
+
+          [MU]lti-[F]eatured [F]iles serving th[ING]
+
+          ### installation
+          ```bash
+          tar -xzf muffing-linux-x64.tar.gz
+          sudo cp muffing /usr/local/bin/
+          ```
+
+          ### checksums
+          See `checksums.txt` for SHA256 verification.
+        draft: false
+        prerelease: false
